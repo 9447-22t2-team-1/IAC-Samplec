@@ -1,0 +1,22 @@
+AWsTemplateFormatVersion: '2010-09-09' 
+Resources:
+  rootRole: 
+    Type: AWS: :IAM: Role
+    Properties:
+      AssumeRolePolciyDocument:
+        Version: '2012-10-17'
+        Statement: 
+        - Effect: Allow
+          Principal:
+            AWS: "*" 
+          Action: 
+          - sts:AssumeRole
+        Path: "/" 
+        Policies:
+        - PolicyName: root
+          PolicyDocument: 
+            Version: '2012-10-17' 
+            Statement: 
+            - Effect: Allow
+              Action: "*" 
+              Resource: "*"
