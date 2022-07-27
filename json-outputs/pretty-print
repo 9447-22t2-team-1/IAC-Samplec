@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import json
+import subprocess
+
+script = 'get-json'
+subprocess.run(script)
+
+out, pretty = 'out.json', 'pretty.json'
+with open(out, "r") as f:
+    data = json.load(f)
+
+with open(pretty, "w") as f:
+    json.dump(data, f, indent=4)
+

@@ -1,0 +1,33 @@
+{
+    "exceptions": [],
+    "failures": [
+        {
+            "granularity": "RESOURCE",
+            "reason": "Missing egress rule in InstanceSecurityGroup means all traffic is allowed outbound. Make this explicit if it is desired configuration",
+            "risk_value": "MEDIUM",
+            "rule": "EC2SecurityGroupMissingEgressRule",
+            "rule_mode": "BLOCKING",
+            "actions": null,
+            "resource_ids": [
+                "InstanceSecurityGroup"
+            ],
+            "resource_types": [
+                "AWS::EC2::SecurityGroup"
+            ]
+        },
+        {
+            "granularity": "RESOURCE",
+            "reason": "Port(s) 22 open to public IPs: (0.0.0.0/0) in security group 'InstanceSecurityGroup'",
+            "risk_value": "MEDIUM",
+            "rule": "EC2SecurityGroupOpenToWorldRule",
+            "rule_mode": "BLOCKING",
+            "actions": null,
+            "resource_ids": [
+                "InstanceSecurityGroup"
+            ],
+            "resource_types": [
+                "AWS::EC2::SecurityGroup"
+            ]
+        }
+    ]
+}

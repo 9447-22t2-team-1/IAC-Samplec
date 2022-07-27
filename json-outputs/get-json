@@ -1,0 +1,6 @@
+#!/usr/bin/env dash
+
+file='aws-example.json'
+[ -n "$1" ] && file="$1"
+
+cfripper --resolve "$file" --format json > out.json
