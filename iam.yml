@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: "cfn vpc template"
+Parameters:
+  awsEnv:
+    Type: String
+    Default: dev
+  project:
+    Type: String
+    Default: dev
+    Description: Name of the project
+  app:
+    Type: String
+    Default: app
+    Description: Name of the app
+Resources:
+  iamRoleEc2:
+    Type: AWS::IAM::Role
+    Properties: 
+      Description: !Sub "${project}-${awsEnv}-role-ec2App-${AWS::Region}"
+      RoleName: !Sub "${project}-${awsEnv}-role-ec2App-${AWS::Region}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Tags: 
+        - Key: Name
+          Value: !Sub "${project}-${awsEnv}-${app}-nacl-private02-${AWS::Region}"
+        - Key: project
+          Value: !Ref project
+        - Key: awsEnv
+          Value: !Ref awsEnv
+  iamPolicyEc2:
+    Type: AWS::IAM::Policy
+    DependsOn: [iamRoleEc2]
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - '*'
+              - 'logs:Get*'
+              - 'logs:List*'
+              - 'logs:Put*'
+              - 's3:Get*'
+              - 's3:List*'
+              - 's3:Put'
+            Resource: '*'
+      PolicyName: !Sub "${project}-${awsEnv}-policy-ec2App-${AWS::Region}"
+      Roles: 
+        - !Ref iamRoleEc2
+  iamInstanceProfileEc2:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: !Sub "${project}-${awsEnv}-instanceProfile-ec2App-${AWS::Region}"
+      Path: /
+      Roles:
+        - !Ref iamRoleEc2
+Outputs:
+  iamInstanceProfileNameEc2:
+    Value: !Ref iamInstanceProfileEc2
+    Export:
+      Name: !Sub "iamInstanceProfileName-ec2App-${project}-${awsEnv}-${app}-${AWS::Region}"
+  iamInstanceProfileArnEc2:
+    Value: !GetAtt iamInstanceProfileEc2.Arn
+    Export:
+      Name: !Sub "iamInstanceProfileArn-ec2App-${project}-${awsEnv}-${app}-${AWS::Region}"
+  iamRoleNameEc2:
+    Value: !GetAtt iamRoleEc2.Arn
+    Export:
+      Name: !Sub "iamRoleName-ec2App-${project}-${awsEnv}-${app}-${AWS::Region}"
+  iamRoleArnEc2:
+    Value: !GetAtt iamRoleEc2.Arn
+    Export:
+      Name: !Sub "iamRoleArn-ec2App-${project}-${awsEnv}-${app}-${AWS::Region}"
+  iamPolicyEc2:
+    Value: !Ref iamPolicyEc2
+    Export:
+      Name: !Sub "iamPolicyApp-${project}-${awsEnv}-${app}-${AWS::Region}"
