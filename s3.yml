@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "cfn S3 bucket"
+
+Parameters:
+  project:
+    Type: String
+    Default: test
+  app:
+    Type: String
+    Default: app
+  awsEnv:
+    Type: String
+    Default: dev
+    AllowedValues: [poc, dev, qa, test, uat, prod]
+  s3BucketName:
+    Type: String
+    Description: Name of S3
+  KMSKeyArn: 
+    Type: String
+    Description: KMS Key ARN
+
+Conditions:
+  useKMSEncryption: !Not [!Equals [!Ref KMSKeyArn, "" ]]
+
+Resources:
+  s3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${project}-${awsEnv}-${app}-${AWS::Region}-${AWS::AccountId}"
+      AccessControl: Private
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          !If
+            - useKMSEncryption
+            - - ServerSideEncryptionByDefault:
+                  KMSMasterKeyID: !Ref KMSKeyArn
+                  SSEAlgorithm: aws:kms
+                BucketKeyEnabled: true
+            - - ServerSideEncryptionByDefault:
+                  SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+
+Outputs:
+  s3Bucket:
+    Value: !Ref s3Bucket
+    Export:
+      Name: !Sub 's3Bucket-${project}-${awsEnv}-${app}-${AWS::Region}'
+  s3BucketArn:
+    Value: !GetAtt s3Bucket.Arn
+    Export:
+      Name: !Sub 's3Arn-${project}-${awsEnv}-${app}-${AWS::Region}'
