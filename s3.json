@@ -1,0 +1,95 @@
+{
+   "AWSTemplateFormatVersion": "2010-09-09",
+   "Conditions": {
+      "useKMSEncryption": [
+         [
+            "KMSKeyArn",
+            ""
+         ]
+      ]
+   },
+   "Description": "cfn S3 bucket",
+   "Outputs": {
+      "s3Bucket": {
+         "Export": {
+            "Name": "s3Bucket-${project}-${awsEnv}-${app}-${AWS::Region}"
+         },
+         "Value": "s3Bucket"
+      },
+      "s3BucketArn": {
+         "Export": {
+            "Name": "s3Arn-${project}-${awsEnv}-${app}-${AWS::Region}"
+         },
+         "Value": "s3Bucket.Arn"
+      }
+   },
+   "Parameters": {
+      "KMSKeyArn": {
+         "Description": "KMS Key ARN",
+         "Type": "String"
+      },
+      "app": {
+         "Default": "app",
+         "Type": "String"
+      },
+      "awsEnv": {
+         "AllowedValues": [
+            "poc",
+            "dev",
+            "qa",
+            "test",
+            "uat",
+            "prod"
+         ],
+         "Default": "dev",
+         "Type": "String"
+      },
+      "project": {
+         "Default": "test",
+         "Type": "String"
+      },
+      "s3BucketName": {
+         "Description": "Name of S3",
+         "Type": "String"
+      }
+   },
+   "Resources": {
+      "s3Bucket": {
+         "Properties": {
+            "AccessControl": "Private",
+            "BucketEncryption": {
+               "ServerSideEncryptionConfiguration": [
+                  "useKMSEncryption",
+                  [
+                     {
+                        "BucketKeyEnabled": true,
+                        "ServerSideEncryptionByDefault": {
+                           "KMSMasterKeyID": "KMSKeyArn",
+                           "SSEAlgorithm": "aws:kms"
+                        }
+                     }
+                  ],
+                  [
+                     {
+                        "ServerSideEncryptionByDefault": {
+                           "SSEAlgorithm": "AES256"
+                        }
+                     }
+                  ]
+               ]
+            },
+            "BucketName": "${project}-${awsEnv}-${app}-${AWS::Region}-${AWS::AccountId}",
+            "PublicAccessBlockConfiguration": {
+               "BlockPublicAcls": false,
+               "BlockPublicPolicy": false,
+               "IgnorePublicAcls": false,
+               "RestrictPublicBuckets": false
+            },
+            "VersioningConfiguration": {
+               "Status": "Enabled"
+            }
+         },
+         "Type": "AWS::S3::Bucket"
+      }
+   }
+}
