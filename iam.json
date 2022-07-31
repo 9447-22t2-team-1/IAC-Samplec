@@ -1,0 +1,131 @@
+{
+   "AWSTemplateFormatVersion": "2010-09-09T00:00:00.000Z",
+   "Description": "cfn vpc template",
+   "Parameters": {
+      "awsEnv": {
+         "Type": "String",
+         "Default": "dev"
+      },
+      "project": {
+         "Type": "String",
+         "Default": "dev",
+         "Description": "Name of the project"
+      },
+      "app": {
+         "Type": "String",
+         "Default": "app",
+         "Description": "Name of the app"
+      }
+   },
+   "Resources": {
+      "iamRoleEc2": {
+         "Type": "AWS::IAM::Role",
+         "Properties": {
+            "Description": null,
+            "RoleName": null,
+            "AssumeRolePolicyDocument": {
+               "Version": "2012-10-17",
+               "Statement": [
+                  {
+                     "Effect": "Allow",
+                     "Principal": {
+                        "Service": [
+                           "ec2.amazonaws.com"
+                        ]
+                     },
+                     "Action": [
+                        "sts:AssumeRole"
+                     ]
+                  }
+               ]
+            },
+            "Tags": [
+               {
+                  "Key": "Name",
+                  "Value": null
+               },
+               {
+                  "Key": "project",
+                  "Value": null
+               },
+               {
+                  "Key": "awsEnv",
+                  "Value": null
+               }
+            ]
+         }
+      },
+      "iamPolicyEc2": {
+         "Type": "AWS::IAM::Policy",
+         "DependsOn": [
+            "iamRoleEc2"
+         ],
+         "Properties": {
+            "PolicyDocument": {
+               "Version": "2012-10-17",
+               "Statement": [
+                  {
+                     "Effect": "Allow",
+                     "Action": [
+                        "*",
+                        "logs:Get*",
+                        "logs:List*",
+                        "logs:Put*",
+                        "s3:Get*",
+                        "s3:List*",
+                        "s3:Put"
+                     ],
+                     "Resource": "*"
+                  }
+               ]
+            },
+            "PolicyName": null,
+            "Roles": [
+               null
+            ]
+         }
+      },
+      "iamInstanceProfileEc2": {
+         "Type": "AWS::IAM::InstanceProfile",
+         "Properties": {
+            "InstanceProfileName": null,
+            "Path": "/",
+            "Roles": [
+               null
+            ]
+         }
+      }
+   },
+   "Outputs": {
+      "iamInstanceProfileNameEc2": {
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      },
+      "iamInstanceProfileArnEc2": {
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      },
+      "iamRoleNameEc2": {
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      },
+      "iamRoleArnEc2": {
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      },
+      "iamPolicyEc2": {
+         "Value": null,
+         "Export": {
+            "Name": null
+         }
+      }
+   }
+}
