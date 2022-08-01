@@ -1,0 +1,195 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "EC2 Instance"
+Parameters:
+  ec2ImageId:
+    Type: String
+    Default: 'ami-0cff7528ff583bf9a'
+    Description: Enter the image Id. Linux AMI 2. Default AMI Id value will work in us-east-1
+  ec2KeyPair:
+    Type: String
+    Default: ''
+    Description: Name of the key pair you want to attach to EC2 instance
+  ec2InstanceType:
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - m1.small
+      - m1.large    
+    Description: Enter t2.micro, m1.small, or m1.large. Default is t2.micro
+  ec2SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet ID to attach to the EC2 instance. This must be in the same VPC as your selected Security Group
+  securityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+    Description: Select security group IDs. Make sure you select those security group which are in the same VPC as your SubnetID
+  roleName:
+    Type: String
+    Default: ''
+    Description: Name of the IAM role which is created for EC2 instance
+  instanceRolePolicyName:
+    Type: String
+    Default: ''
+    Description: IAM App Instance Policy Name
+  bucketName:
+    Type: String
+    Default: ''
+    Description: Name of the S3 bucket. It should be unique. To make it unique you can add account-id at the end of the bucket name
+
+  dBInstanceId:
+    Default: AppDatabase
+    Description: Application DB instance
+    Type: String
+    MinLength: '1'
+    MaxLength: '63'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: >-
+      Must begin with a letter and must not end with a hyphen or contain two
+      consecutive hyphens.
+  dBName:
+    Default: AwesomeAppDatabase
+    Description: Database for the application
+    Type: String
+    MinLength: '1'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: Must begin with a letter and contain only alphanumeric characters.
+  dBInstanceClass:
+    Default: db.t2.small
+    Description: DB instance class
+    Type: String
+    ConstraintDescription: Must select a valid DB instance type.
+  dBAllocatedStorage:
+    Default: '20'
+    Description: The size of the database (GiB)
+    Type: Number
+    MinValue: '20'
+    MaxValue: '65536'
+    ConstraintDescription: must be between 20 and 65536 GiB.
+  dBUsername:
+    NoEcho: 'true'
+    Description: Username for MySQL database access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    ConstraintDescription: must begin with a letter and contain only alphanumeric characters.
+  dBPassword:
+    NoEcho: 'true'
+    Description: Password MySQL database access
+    Type: String
+    MinLength: '8'
+    MaxLength: '41'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: must contain only alphanumeric characters.  
+
+Resources:
+
+# -------------- EC2 Instance --------------
+
+  ec2App:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ec2ImageId
+      KeyName: !Ref ec2KeyPair
+      InstanceType: !Ref ec2InstanceType    
+      IamInstanceProfile: !Ref iamAppInstanceProfile
+      SubnetId: !Ref ec2SubnetId
+      SecurityGroupIds: !Ref securityGroupIds
+      SourceDestCheck: false
+      UserData:
+        Fn::Base64: 
+          !Sub |
+          #!/bin/bash -xe
+          echo "start nginx install"
+          sudo amazon-linux-extras install nginx1.12 -y
+          sudo service nginx start
+          echo "end nginx install"
+      Tags:
+        - Key: Name
+          Value: "application-instance-poc"
+
+
+
+# -------------- IAM Role for EC2 instance --------------
+
+  iamApplicationInstanceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/"
+      RoleName: !Ref roleName
+      ManagedPolicyArns: 
+        - !Ref iamAppInstancePolicy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action: ['sts:AssumeRole']
+            Principal:
+              "AWS": ["*"]
+  
+  iamAppInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties: 
+      Path: "/"
+      Roles: [!Ref iamApplicationInstanceRole]
+      InstanceProfileName: !Ref iamApplicationInstanceRole
+
+  iamAppInstancePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Path: "/"
+      ManagedPolicyName: !Ref instanceRolePolicyName
+      Description: "IAM Policy for the IAM role which is created for EC2 instance"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        -
+         Effect: "Allow"
+         Action: ["*"]
+         Resource: "*"
+
+# -------------- S3 Bucket --------------
+
+  applicationBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref bucketName
+      AccessControl: "PublicRead"
+      VersioningConfiguration:
+        Status: "Suspended"
+
+# -------------- RDS --------------
+
+
+  Database:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: !Ref dBInstanceId
+      DBName: !Ref dBName
+      DBInstanceClass: !Ref dBInstanceClass
+      AllocatedStorage: !Ref dBAllocatedStorage
+      Engine: MySQL
+      EngineVersion: "8.0.16"
+      MasterUsername: !Ref dBUsername
+      MasterUserPassword: !Ref dBPassword
+      StorageType: standard
+      MultiAZ: false
+      StorageEncrypted: false
+      CopyTagsToSnapshot: true
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+Outputs:
+  appBucket:
+    Value: !Ref applicationBucket
+    Export:
+      Name: "application-bucket-resource-arn"
+  instanceProfileARN:
+    Value: !GetAtt iamAppInstanceProfile.Arn
+    Export:
+      Name: "app-instance-profile-arn"
+  applicationInstanceIP:
+    Value: !GetAtt ec2App.PublicIp
